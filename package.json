@@ -9,7 +9,7 @@
     "dev": "nodemon index.js",
     "build:ui": "@powershell Remove-Item -Recurse -Force dist && cd C:/Users/Liova/OneDrive/Documents/GitHub/uoh-fs-course/part2/phonebook && npm run build && @powershell Copy-Item dist -Recurse C:/Users/Liova/OneDrive/Documents/GitHub/uoh-course-part3be",
     "deploy": "fly deploy",
-    "deploy:full": "npm run build:ui && npm run deploy",    
+    "deploy:full": "npm run build:ui && npm run deploy",
     "logs:prod": "fly logs"
   },
   "author": "Yurii Levchuk",
@@ -17,6 +17,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.1",
+    "mongoose": "^8.7.3",
     "morgan": "^1.10.0"
   },
   "devDependencies": {

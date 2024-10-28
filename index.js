@@ -14,7 +14,7 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :r
 
 let phonebook =
 [
-  { 
+  {
     "id": "1",
     "name": "Arto Hellas", 
     "number": "040-123456"
