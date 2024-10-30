@@ -2,11 +2,11 @@ require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
-const Person = require('./modules/Person');
+const Person = require('./models/Person');
 
 const app = express();
 
-//middleware
+// middleware //
 app.use(express.json());
 app.use(cors());
 app.use(express.static('dist'));
@@ -14,22 +14,21 @@ morgan.token('request-body', (req, res) => JSON.stringify(req.body));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :request-body'));
 
 
-//get
+// get //
 app.get('/api/persons', (req, res)=>{
   Person.find({}).then( db=>{
     res.json(db);
   })
 })
 
-app.get('/api/persons/:id', (req, res)=>{
+app.get('/api/persons/:id', (req, res, next)=>{
   id = req.params.id;
   Person.findById(id)
     .then( record=>{
-      res.json(record);
+      if(record){ res.json(record) }
+      else{ res.status(404).send({ error:`no existing record with ${id} id` })}
     })
-    .catch( err=>{
-      res.status(404).send({ error:`no existing record with ${id} id` });
-    })
+    .catch( err => next(err))
 })
 
 app.get('/info', (req, res)=>{
@@ -43,15 +42,15 @@ app.get('/info', (req, res)=>{
   );
 })
 
-//delete
-app.delete('/api/persons/:id', (req, res)=>{
+// delete //
+app.delete('/api/persons/:id', (req, res, next)=>{
   id = req.params.id;
-  phonebook = phonebook.filter(el => el.id!==id);
-
-  res.status(204).end();
+  Person.findByIdAndDelete(id)
+    .then( ()=>{ res.status(204).end(); })
+    .catch( err=>next(err) );
 })
 
-//post
+// post //
 app.post('/api/persons', (req, res)=>{
   const body = req.body;
   if(!body.name){
@@ -73,11 +72,39 @@ app.post('/api/persons', (req, res)=>{
   })
 })
 
+// put //
+app.put('/api/persons/:id', (req, res, next)=>{
+  const body = req.body;
+
+  const newRecord = {
+    name: body.name,
+    number: body.number
+  }
+
+  Person.findByIdAndUpdate(req.params.id, newRecord, {new:true})
+    .then( el=>{res.json(el)} )
+    .catch( err=>{next(err)} );
+})
+
+// handling unknown endpoint //
 const unknownEndpoint = (req, res)=>{
   res.status(404).send({ error:"unknown path" })
 }
 app.use(unknownEndpoint);
 
+// handling errors //
+const handleError = (err, req, res, next)=>{
+  console.error(err);
+
+  if(err.name === 'CastError'){
+    return res.status(404).send({ error: "malformated id" });
+  };
+
+  next(err);
+}
+app.use(handleError);
+
+// launch //
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, ()=>{
   console.log(`Alive on: http://localhost:${PORT}`);
