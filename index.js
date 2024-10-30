@@ -35,11 +35,15 @@ app.get('/info', (req, res)=>{
   d = new Date();
   console.log(d);
 
-  res.send(
-    `<div>
-      Phonebook has info for ${phonebook.length} people <br/>
-      ${d.toString()}</div>`
-  );
+  Person.countDocuments({})
+    .then( count=>{
+      res.send(
+        `<div>
+          Phonebook has info for ${count} people <br/>
+          ${d.toString()}</div>`
+      );
+    })
+    .catch( err=>next(err) );
 })
 
 // delete //
@@ -51,7 +55,7 @@ app.delete('/api/persons/:id', (req, res, next)=>{
 })
 
 // post //
-app.post('/api/persons', (req, res)=>{
+app.post('/api/persons', (req, res, next)=>{
   const body = req.body;
   if(!body.name){
     return res.status(400).json( {error: "record name was not given"} );
@@ -67,21 +71,19 @@ app.post('/api/persons', (req, res)=>{
     number : body.number
   })
 
-  newRecord.save().then( savedPerson=>{
-    res.json(savedPerson);
-  })
+  newRecord.save()
+    .then( savedPerson=>{
+      res.json(savedPerson);
+    })
+    .catch( err => next(err) );
 })
 
 // put //
 app.put('/api/persons/:id', (req, res, next)=>{
-  const body = req.body;
+  const { name, number } = req.body;
 
-  const newRecord = {
-    name: body.name,
-    number: body.number
-  }
-
-  Person.findByIdAndUpdate(req.params.id, newRecord, {new:true})
+  Person.findByIdAndUpdate(req.params.id, {name, number}, 
+    {new:true, runValidators:true, context:'query'})
     .then( el=>{res.json(el)} )
     .catch( err=>{next(err)} );
 })
@@ -98,6 +100,8 @@ const handleError = (err, req, res, next)=>{
 
   if(err.name === 'CastError'){
     return res.status(404).send({ error: "malformated id" });
+  } else if(err.name === 'ValidationError'){
+    return res.status(404).send({ error: err.message });
   };
 
   next(err);
